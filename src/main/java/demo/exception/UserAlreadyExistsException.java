@@ -1,7 +1,8 @@
 package demo.exception;
 
+public class UserAlreadyExistsException extends RuntimeException {
 
-
-
-public class UserNotFoundException extends  GlobalExceptionHandler{
+    public UserAlreadyExistsException(String message) {
+        super(message);
+    }
 }

@@ -1,15 +1,15 @@
-package demo.dto;
+package demo.exception;
 
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
+@Data
 @AllArgsConstructor
-@RequiredArgsConstructor
 public class ErrorResponse {
 
-    private LocalDateTime localDateTime;
+    private LocalDateTime timestamp;
     private String status;
-    private String error;
+    private String message;
 }

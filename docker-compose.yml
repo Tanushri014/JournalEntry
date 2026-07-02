@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: mysql-db
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: journaldb
+      MYSQL_ROOT_HOST: "%"
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  journal-app:
+    build: .
+    container_name: journal-app
+
+    depends_on:
+      - mysql
+
+    env_file:
+      - .env
+
+    ports:
+      - "8081:8080"
+
+    restart: unless-stopped
+
+volumes:
+  mysql-data:

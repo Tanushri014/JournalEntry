@@ -1,0 +1,22 @@
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  application:
+    name: Journal Management API
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+info:
+  app:
+    name: Journal Management API
+    description: REST API for Journal Management
+    version: 1.0.0
+    developer: Tanushri Matre
