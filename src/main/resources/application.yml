@@ -1,0 +1,5 @@
+spring.data.mongodb.uri=mongodb+srv://root:root@cluster0.clbkr37.mongodb.net/?appName=Cluster0
+spring.data.mongodb.port=27017
+spring.data.mongodb.database=journalApp
+
+spring.data.mongodb.auto-index-creation=true
