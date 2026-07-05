@@ -3,6 +3,7 @@ package demo.configuration;
 import demo.security.JwtAuthenticationFilter;
 import demo.security.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,7 +29,8 @@ public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
     /**
      * Password encoder.
      */
@@ -119,7 +121,7 @@ public class SecurityConfig {
                 new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173","https://mindcanvas-journal.vercel.app")
+                List.of("http://localhost:5173",frontendUrl)
         );
 
         configuration.setAllowedMethods(
