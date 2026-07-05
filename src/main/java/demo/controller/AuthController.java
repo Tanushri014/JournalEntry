@@ -49,7 +49,7 @@ public class AuthController {
         ResponseCookie cookie = ResponseCookie.from("jwt", jwt)
                 .httpOnly(true)
                 .secure(false)          // Change to true after HTTPS deployment
-                .sameSite("Lax")        // Change to None after deployment
+                .sameSite("None")        // Change to None after deployment
                 .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
