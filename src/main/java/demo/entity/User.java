@@ -2,15 +2,17 @@ package demo.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "users")
 @AllArgsConstructor
-@RequiredArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
 public class User {
@@ -20,13 +22,20 @@ public class User {
     private Long id;
 
     @NotBlank
+    @Column(nullable = false)
     private String userName;
 
-    @NotBlank
-    private String password;
+    @NotNull
+    @Column(nullable = false)
+    private LocalDate dateOfBirth;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    private List<String> roles = new ArrayList<>();
+    @NotBlank
+    @Column(nullable = false, unique = true)
+    private String userEmail;
+
+    @NotBlank
+    @Column(nullable = false)
+    private String password;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<JournalEntry> journalEntries = new ArrayList<>();

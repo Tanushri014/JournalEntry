@@ -36,7 +36,7 @@ private  final UserService userService;
             //get the report of individual user
             String body=calculateSentimentReport(user);
             //send mail
-            emailService.sendEmail(user.getUserName(), "Sentiment analysis is ready",body);
+            emailService.sendEmail(user.getUserEmail(), "Sentiment analysis is ready",body);
         }
     }
 

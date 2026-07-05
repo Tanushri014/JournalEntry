@@ -3,12 +3,14 @@ package demo.service;
 import demo.dto.QuoteResponse;
 import demo.entity.JournalEntry;
 import demo.entity.User;
+import demo.enums.Sentiment;
 import demo.exception.JournalEntryNotFoundException;
 import demo.repository.JournalEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,27 +24,21 @@ public class JournalEntryService {
     /**
      * Get all journal entries of the logged-in user.
      */
-    public List<JournalEntry> getAllEntries(String username) {
+    public List<JournalEntry> getAllEntries(String userEmail) {
 
-        User user = userService.findByUserName(username);
-
-        return user.getJournalEntries();
+        return journalEntryRepository.findByUserUserEmail(userEmail);
     }
 
     /**
      * Get a specific journal entry.
      * Only if it belongs to the logged-in user.
      */
-    public JournalEntry getEntryById(Long id, String username) {
-
-        User user = userService.findByUserName(username);
-
-        return user.getJournalEntries()
-                .stream()
-                .filter(entry -> entry.getId().equals(id))
-                .findFirst()
+    public JournalEntry getEntryById(Long id, String userEmail) {
+        return journalEntryRepository
+                .findByIdAndUserUserEmail(id, userEmail)
                 .orElseThrow(() ->
                         new JournalEntryNotFoundException("Journal entry not found."));
+
     }
 
     /**
@@ -50,9 +46,9 @@ public class JournalEntryService {
      */
     @Transactional
     public JournalEntry createEntry(JournalEntry journalEntry,
-                                    String username) {
+                                    String userEmail) {
 
-        User user = userService.findByUserName(username);
+        User user = userService.findByUserEmail(userEmail);
 
         journalEntry.setDate(LocalDateTime.now());
         // ⭐ This line is missing
@@ -71,10 +67,10 @@ public class JournalEntryService {
     @Transactional
     public JournalEntry updateEntry(Long id,
                                     JournalEntry updatedEntry,
-                                    String username) {
+                                    String userEmail) {
 
         JournalEntry existingEntry =
-                getEntryById(id, username);
+                getEntryById(id, userEmail);
 
         existingEntry.setTitle(updatedEntry.getTitle());
         existingEntry.setContent(updatedEntry.getContent());
@@ -87,12 +83,12 @@ public class JournalEntryService {
      */
     @Transactional
     public void deleteEntry(Long id,
-                            String username) {
+                            String userEmail) {
 
-        User user = userService.findByUserName(username);
+        User user = userService.findByUserEmail(userEmail);
 
         JournalEntry journalEntry =
-                getEntryById(id, username);
+                getEntryById(id, userEmail);
 
         user.getJournalEntries()
                 .removeIf(entry -> entry.getId().equals(id));
@@ -103,9 +99,24 @@ public class JournalEntryService {
     }
 
 
+    public List<JournalEntry> searchByDate(
+            LocalDate date,
+            String userEmail) {
 
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.atTime(23, 59, 59);
 
+        return journalEntryRepository
+                .findByUserUserEmailAndDateBetween(
+                        userEmail,
+                        start,
+                        end
+                );
+    }
 
+    public List<JournalEntry> getByMood(Sentiment mood, String userEmail) {
+        return journalEntryRepository.findByUserUserEmailAndMood(userEmail, mood);
+    }
 
 
 

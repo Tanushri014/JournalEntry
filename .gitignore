@@ -23,3 +23,10 @@ out/
 # Secrets
 application-local.yml
 application-prod.yml
+
+
+# Build output
+target/
+
+# IntelliJ
+*.iml

@@ -2,6 +2,7 @@ package demo.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,33 +30,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Step 1: Read the Authorization header
-        String authHeader = request.getHeader("Authorization");
+        System.out.println("========== JWT FILTER ==========");
+        System.out.println("URI: " + request.getRequestURI());
 
-        // Step 2: If there is no Bearer token, continue the filter chain
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        String jwt = null;
+
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) {
+            System.out.println("No cookies received.");
+        } else {
+            for (Cookie cookie : cookies) {
+                System.out.println(cookie.getName() + " = " + cookie.getValue());
+
+                if ("jwt".equals(cookie.getName())) {
+                    jwt = cookie.getValue();
+                }
+            }
+        }
+
+        if (jwt == null) {
+            System.out.println("JWT cookie not found.");
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Step 3: Remove "Bearer " prefix
-        String jwt = authHeader.substring(7);
-
         try {
-
-            // Step 4: Extract username from JWT
             String username = jwtService.extractUsername(jwt);
+            System.out.println("Username from JWT: " + username);
 
-            // Step 5: Authenticate only if the SecurityContext is empty
             if (username != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // Step 6: Load user from MongoDB
                 UserDetails userDetails =
                         userDetailsService.loadUserByUsername(username);
 
-                // Step 7: Validate the token
                 if (jwtService.isTokenValid(jwt, userDetails)) {
+
+                    System.out.println("JWT is valid.");
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
@@ -64,25 +76,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     userDetails.getAuthorities()
                             );
 
-                    // Step 8: Attach request details
                     authentication.setDetails(
                             new WebAuthenticationDetailsSource()
                                     .buildDetails(request)
                     );
 
-                    // Step 9: Store authentication in SecurityContext
                     SecurityContextHolder.getContext()
                             .setAuthentication(authentication);
+
+                    System.out.println("Authentication stored in SecurityContext.");
+                } else {
+                    System.out.println("JWT is INVALID.");
                 }
             }
 
-        } catch (Exception exception) {
-
-            // Invalid or expired JWT.
-            // Continue without authentication.
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        // Step 10: Continue to the next filter
         filterChain.doFilter(request, response);
     }
 }

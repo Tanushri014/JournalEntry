@@ -35,6 +35,46 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidOtpException(
+            InvalidOtpException ex) {
+
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+    }
+
+    @ExceptionHandler(OtpExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleOtpExpiredException(
+            OtpExpiredException ex) {
+
+        return buildErrorResponse(
+                HttpStatus.GONE,
+                ex.getMessage()
+        );
+    }
+
+    @ExceptionHandler(PendingRegistrationAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handlePendingRegistrationAlreadyExists(
+            PendingRegistrationAlreadyExistsException ex) {
+
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+    }
+
+    @ExceptionHandler(PendingRegistrationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePendingRegistrationNotFound(
+            PendingRegistrationNotFoundException ex) {
+
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+    }
+
     @ExceptionHandler(JournalEntryNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleJournalNotFound(
             JournalEntryNotFoundException ex) {

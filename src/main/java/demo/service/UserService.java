@@ -1,17 +1,16 @@
 package demo.service;
 
+import demo.dto.UserResponse;
 import demo.entity.User;
 import demo.exception.UserNotFoundException;
 import demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,8 +19,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    //if we want to add details about the code or prin ton console then we are going to use this
-//Logger logger = LoggerFactory.getLogger(UserRepository.class);
+
     /**
      * Get all users.
      * Mainly used by the Admin module.
@@ -34,11 +32,9 @@ public class UserService {
      * Find user by id.
      */
     public User findById(Long id) {
-
         return userRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("User not found with id {}", id);
-
                     return new UserNotFoundException("User not found");
                 });
     }
@@ -46,12 +42,20 @@ public class UserService {
     /**
      * Find user by username.
      */
-    public User findByUserName(String userName) {
-
-        return userRepository.findByUserName(userName).orElseThrow(()->
-                {log.warn("User not found :{}",userName);
-                    return new UserNotFoundException("user not found"+userName);
+    public User findByUserEmail(String userEmail) {
+        return userRepository.findByUserEmail(userEmail)
+                .orElseThrow(() -> {
+                    log.warn("User not found: {}", userEmail);
+                    return new UserNotFoundException("User not found: " + userEmail);
                 });
+    }
+
+    /**
+     * Get logged-in user's profile.
+     */
+    public UserResponse getUserProfile(String userEmail) {
+        User user = findByUserEmail(userEmail);
+        return mapToUserResponse(user);
     }
 
     /**
@@ -59,7 +63,7 @@ public class UserService {
      */
     @Transactional
     public User saveUser(User user) {
-log.info("creating user {}",user.getUserName());
+        log.info("Creating user {}", user.getUserEmail());
         return userRepository.save(user);
     }
 
@@ -67,37 +71,54 @@ log.info("creating user {}",user.getUserName());
      * Update logged-in user's profile.
      */
     @Transactional
-    public User updateUser(String username,
-                           User updatedUser) {
-        log.info("updating user {}",username);
-        User existingUser = findByUserName(username);
+    public UserResponse updateUser(String userEmail, User updatedUser) {
 
-        existingUser.setUserName(updatedUser.getUserName());
+        log.info("Updating user {}", userEmail);
 
-        if (updatedUser.getPassword() != null
-                && !updatedUser.getPassword().isBlank()) {
+        User existingUser = findByUserEmail(userEmail);
+
+        existingUser.setUserEmail(updatedUser.getUserEmail());
+
+        if (updatedUser.getPassword() != null &&
+                !updatedUser.getPassword().isBlank()) {
 
             existingUser.setPassword(
                     passwordEncoder.encode(updatedUser.getPassword())
             );
         }
 
-        return userRepository.save(existingUser);
+        User savedUser = userRepository.save(existingUser);
+
+        return mapToUserResponse(savedUser);
     }
 
     /**
      * Delete logged-in user.
      */
     @Transactional
-    public void deleteUser(String username) {
+    public void deleteUser(String userEmail) {
 
-        User user = findByUserName(username);
-        log.info("deleting user {}",user.getUserName());
+        User user = findByUserEmail(userEmail);
+
+        log.info("Deleting user {}", user.getUserName());
+
         userRepository.delete(user);
     }
 
-    public boolean existsByUserName(String userName) {
-        return userRepository.existsByUserName(userName);
+    public boolean existsByUserEmail(String userEmail) {
+        return userRepository.existsByUserEmail(userEmail);
+    }
+
+    /**
+     * Convert User entity to UserResponse DTO.
+     */
+    private UserResponse mapToUserResponse(User user) {
+        return new UserResponse(
+                user.getId(),
+                user.getUserName(),
+                user.getUserEmail(),
+                user.getDateOfBirth()
+
+        );
     }
 }
-//any method that modifies  the database should be trascational

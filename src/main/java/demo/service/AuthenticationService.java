@@ -3,7 +3,10 @@ package demo.service;
 import demo.dto.JwtResponse;
 import demo.dto.LoginRequest;
 import demo.dto.RegisterRequest;
+import demo.entity.PendingRegistration;
 import demo.entity.User;
+import demo.exception.InvalidOtpException;
+import demo.exception.PendingRegistrationAlreadyExistsException;
 import demo.exception.UserAlreadyExistsException;
 import demo.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDateTime;
+
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +28,8 @@ import java.util.List;
 public class AuthenticationService {
 
     private final UserService userService;
+    private final PendingRegistrationService pendingRegistrationService;
+    private final OTPService otpService;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -32,55 +38,117 @@ public class AuthenticationService {
 
     @Transactional
     public void register(RegisterRequest request) {
+        log.info("Java LocalDateTime.now(): {}", LocalDateTime.now());
+        log.info("Java ZoneId: {}", java.time.ZoneId.systemDefault());
+        log.info("Registering user {}", request.getUserEmail());
 
-        log.info("Registering user {}", request.getUserName());
-
-        if (userService.existsByUserName(request.getUserName())) {
-            log.warn("Registration failed. Username already exists: {}", request.getUserName());
-            throw new UserAlreadyExistsException("Username already exists");
+        if (userService.existsByUserEmail(request.getUserEmail())) {
+            throw new UserAlreadyExistsException("User already exists.");
         }
 
-        User user = new User();
-        user.setUserName(request.getUserName());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRoles(List.of("USER"));
-
-        userService.saveUser(user);
-
-        log.info("User {} registered successfully", request.getUserName());
-
-        try {
-            sendRegistrationSuccessMail(request.getUserName());
-        } catch (Exception e) {
-            log.error("Failed to send welcome email to {}", request.getUserName(), e);
+        if (pendingRegistrationService.exists(request.getUserEmail())) {
+            throw new PendingRegistrationAlreadyExistsException(
+                    "A verification request is already pending. Please verify your email first."
+            );
         }
+
+        PendingRegistration pendingRegistration = new PendingRegistration();
+
+        pendingRegistration.setUserEmail(request.getUserEmail());
+        pendingRegistration.setUserName(request.getUserName());
+        pendingRegistration.setDateOfBirth(request.getDateOfBirth());
+
+        pendingRegistration.setPassword(
+                passwordEncoder.encode(request.getPassword())
+        );
+
+        pendingRegistrationService.save(pendingRegistration);
+
+        otpService.sendVerificationOTP(request.getUserEmail());
+
+        log.info("Verification OTP sent to {}", request.getUserEmail());
     }
 
-    public JwtResponse login(LoginRequest request) {
+    @Transactional
+    public void verifyRegistration(String userEmail, int otp) {
+
+        boolean verified = otpService.verifyOTP(userEmail, otp);
+
+        if (!verified) {
+            pendingRegistrationService.delete(userEmail);
+            throw new InvalidOtpException("Invalid OTP.");
+        }
+
+        PendingRegistration pending =
+                pendingRegistrationService.getByUserEmail(userEmail);
+
+        User user = new User();
+
+        user.setUserName(pending.getUserName());
+        user.setPassword(pending.getPassword());
+
+        user.setUserEmail(pending.getUserEmail());
+        user.setDateOfBirth(pending.getDateOfBirth());
+        userService.saveUser(user);
+
+        pendingRegistrationService.delete(userEmail);
+
+        try {
+            sendRegistrationSuccessMail(userEmail);
+        } catch (Exception e) {
+            log.error("Failed to send welcome email to {}", userEmail, e);
+        }
+
+        UserDetails userDetails =
+                userDetailsService.loadUserByUsername(userEmail);
+
+        String jwt = jwtService.generateToken(userDetails);
+
+        log.info("User {} registered successfully.", userEmail);
+
+
+    }
+
+
+    public String login(LoginRequest request) {
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUserName(),
+                        request.getUserEmail(),
                         request.getPassword()
                 )
         );
 
         UserDetails userDetails =
-                userDetailsService.loadUserByUsername(request.getUserName());
+                userDetailsService.loadUserByUsername(
+                        request.getUserEmail()
+                );
 
         String jwt = jwtService.generateToken(userDetails);
 
-        log.info("User {} logged in successfully", request.getUserName());
+        log.info("User {} logged in successfully.", request.getUserEmail());
 
-        return new JwtResponse(jwt);
+        return jwt;
     }
 
-    private void sendRegistrationSuccessMail(String toUserName) {
+
+
+
+
+    private void sendRegistrationSuccessMail(String email) {
 
         emailService.sendEmail(
-                toUserName,
+                email,
                 "Registration Successful",
-                "Welcome! Your account has been created successfully."
+                """
+                Welcome!
+
+                Your account has been created successfully.
+
+                You can now start using Journal App.
+
+                Thank you for registering!
+                """
         );
     }
 }
