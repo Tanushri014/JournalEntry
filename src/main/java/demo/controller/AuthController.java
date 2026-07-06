@@ -1,8 +1,5 @@
 package demo.controller;
-import demo.dto.JwtResponse;
-import demo.dto.LoginRequest;
-import demo.dto.RegisterRequest;
-import demo.dto.VerifyOtpRequest;
+import demo.dto.*;
 import demo.service.AuthenticationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -69,4 +66,27 @@ public class AuthController {
 
         return ResponseEntity.ok("Email veriied successfully");
     }
+    @Operation(summary = "Resend verification OTP")
+    @PostMapping("/resend-otp")
+    public ResponseEntity<String> resendOtp(
+            @Valid @RequestBody ResendOtpRequest request) {
+
+        authenticationService.resendOtp(
+                request.getUserEmail()
+        );
+
+        return ResponseEntity.ok(
+                "A new verification OTP has been sent."
+        );
+    }
+    @Operation(summary = "Cancel pending registration")
+    @DeleteMapping("/pending-registration/{userEmail}")
+    public ResponseEntity<String> deletePendingRegistration(
+            @PathVariable String userEmail) {
+
+        authenticationService.deletePendingRegistration(userEmail);
+
+        return ResponseEntity.ok("Pending registration deleted.");
+    }
+
 }

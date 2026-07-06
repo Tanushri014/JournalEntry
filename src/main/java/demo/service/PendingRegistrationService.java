@@ -56,10 +56,14 @@ public class PendingRegistrationService {
         return pendingRegistration;
     }
 
+    @Transactional
     public void delete(String userEmail) {
-        pendingRegistrationRepository.deleteByUserEmail(userEmail);
-    }
 
+        pendingRegistrationRepository.findByUserEmail(userEmail)
+                .ifPresent(pendingRegistrationRepository::delete);
+
+        log.info("Pending registration deleted for {}", userEmail);
+    }
     /**
      * Returns true only if a non-expired pending registration exists.
      */

@@ -16,6 +16,7 @@ management:
 
 info:
   app:
+    frontend-url: ${FRONTEND_URL}
     name: Journal Management API
     description: REST API for Journal Management
     version: 1.0.0

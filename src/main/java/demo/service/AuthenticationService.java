@@ -1,11 +1,9 @@
 package demo.service;
 
-import demo.dto.JwtResponse;
 import demo.dto.LoginRequest;
 import demo.dto.RegisterRequest;
 import demo.entity.PendingRegistration;
 import demo.entity.User;
-import demo.exception.InvalidOtpException;
 import demo.exception.PendingRegistrationAlreadyExistsException;
 import demo.exception.UserAlreadyExistsException;
 import demo.security.JwtService;
@@ -21,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,17 +30,19 @@ public class AuthenticationService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
-
+    private final JwtService jwtService;
     @Transactional
     public void register(RegisterRequest request) {
+
         log.info("Java LocalDateTime.now(): {}", LocalDateTime.now());
         log.info("Java ZoneId: {}", java.time.ZoneId.systemDefault());
         log.info("Registering user {}", request.getUserEmail());
 
         if (userService.existsByUserEmail(request.getUserEmail())) {
-            throw new UserAlreadyExistsException("User already exists.");
+            throw new UserAlreadyExistsException(
+                    "An account with this email already exists. Please log in or use a different email."
+            );
         }
 
         if (pendingRegistrationService.exists(request.getUserEmail())) {
@@ -64,20 +63,30 @@ public class AuthenticationService {
 
         pendingRegistrationService.save(pendingRegistration);
 
-        otpService.sendVerificationOTP(request.getUserEmail());
+        try {
 
-        log.info("Verification OTP sent to {}", request.getUserEmail());
+            otpService.sendVerificationOTP(request.getUserEmail());
+
+            log.info("Verification OTP sent to {}", request.getUserEmail());
+
+        } catch (Exception ex) {
+
+            pendingRegistrationService.delete(request.getUserEmail());
+
+            log.error(
+                    "Registration rolled back for {} because OTP email could not be sent.",
+                    request.getUserEmail(),
+                    ex
+            );
+
+            throw ex;
+        }
     }
 
     @Transactional
     public void verifyRegistration(String userEmail, int otp) {
 
-        boolean verified = otpService.verifyOTP(userEmail, otp);
-
-        if (!verified) {
-            pendingRegistrationService.delete(userEmail);
-            throw new InvalidOtpException("Invalid OTP.");
-        }
+        otpService.verifyOTP(userEmail, otp);
 
         PendingRegistration pending =
                 pendingRegistrationService.getByUserEmail(userEmail);
@@ -86,9 +95,9 @@ public class AuthenticationService {
 
         user.setUserName(pending.getUserName());
         user.setPassword(pending.getPassword());
-
         user.setUserEmail(pending.getUserEmail());
         user.setDateOfBirth(pending.getDateOfBirth());
+
         userService.saveUser(user);
 
         pendingRegistrationService.delete(userEmail);
@@ -99,17 +108,24 @@ public class AuthenticationService {
             log.error("Failed to send welcome email to {}", userEmail, e);
         }
 
-        UserDetails userDetails =
-                userDetailsService.loadUserByUsername(userEmail);
-
-        String jwt = jwtService.generateToken(userDetails);
-
         log.info("User {} registered successfully.", userEmail);
+    }
+    @Transactional
+    public void resendOtp(String userEmail) {
 
+        PendingRegistration pending =
+                pendingRegistrationService.getByUserEmail(userEmail);
+
+        otpService.sendVerificationOTP(
+                pending.getUserEmail()
+        );
+
+        log.info(
+                "Verification OTP resent to {}",
+                userEmail
+        );
 
     }
-
-
     public String login(LoginRequest request) {
 
         authenticationManager.authenticate(
@@ -123,17 +139,12 @@ public class AuthenticationService {
                 userDetailsService.loadUserByUsername(
                         request.getUserEmail()
                 );
-
         String jwt = jwtService.generateToken(userDetails);
 
         log.info("User {} logged in successfully.", request.getUserEmail());
 
-        return jwt;
+        return  jwtService.generateToken(userDetails);
     }
-
-
-
-
 
     private void sendRegistrationSuccessMail(String email) {
 
@@ -151,4 +162,17 @@ public class AuthenticationService {
                 """
         );
     }
+
+    @Transactional
+    public void deletePendingRegistration(String userEmail) {
+
+        otpService.deleteOtp(userEmail);
+
+        pendingRegistrationService.delete(userEmail);
+
+        log.info("Pending registration deleted for {}", userEmail);
+
+    }
+
+
 }

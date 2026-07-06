@@ -1,6 +1,8 @@
 package demo.service;
 
 import demo.entity.OtpVerification;
+import demo.exception.InvalidOtpException;
+import demo.exception.OtpExpiredException;
 import demo.repository.OtpRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +38,6 @@ public class OTPService {
 
         int otp = generateOTP();
 
-        // Save OTP before sending email
         saveOtp(userEmail, otp);
 
         try {
@@ -65,9 +65,7 @@ public class OTPService {
 
         } catch (Exception e) {
 
-            // Remove OTP if email sending fails
-            otpRepository.findByEmail(userEmail)
-                    .ifPresent(otpRepository::delete);
+            otpRepository.deleteByEmail(userEmail);
 
             log.error("Failed to send OTP to {}", userEmail, e);
 
@@ -99,17 +97,15 @@ public class OTPService {
      * Verifies the OTP entered by the user.
      */
     @Transactional
-    public boolean verifyOTP(String userEmail, int otpReceived) {
+    public void verifyOTP(String userEmail, int otpReceived) {
 
-        Optional<OtpVerification> optionalOtp =
-                otpRepository.findByEmail(userEmail);
-
-        if (optionalOtp.isEmpty()) {
-            log.warn("No OTP found for {}", userEmail);
-            return false;
-        }
-
-        OtpVerification otpVerification = optionalOtp.get();
+        OtpVerification otpVerification = otpRepository
+                .findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new InvalidOtpException(
+                                "No verification request found. Please register again."
+                        )
+                );
 
         if (otpVerification.getExpiryTime().isBefore(LocalDateTime.now())) {
 
@@ -117,21 +113,27 @@ public class OTPService {
 
             log.warn("OTP expired for {}", userEmail);
 
-            return false;
+            throw new OtpExpiredException(
+                    "Your verification code has expired. Please request a new OTP."
+            );
         }
 
         if (otpVerification.getOtp() != otpReceived) {
 
             log.warn("Invalid OTP received for {}", userEmail);
 
-            return false;
+            throw new InvalidOtpException(
+                    "The verification code you entered is incorrect."
+            );
         }
 
         otpRepository.delete(otpVerification);
 
         log.info("OTP verified successfully for {}", userEmail);
-        //send mail successful
+    }
 
-        return true;
+    @Transactional
+    public void deleteOtp(String userEmail) {
+        otpRepository.deleteByEmail(userEmail);
     }
 }
