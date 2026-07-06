@@ -35,6 +35,9 @@ external:
   api:
     quote-url: ${QUOTE_URL}
 
+
+app:
+  frontend-url: ${FRONTEND_URL}
 logging:
   level:
     root: INFO
