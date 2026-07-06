@@ -22,8 +22,7 @@ import java.time.Duration;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name="Authentication",description = "User registration and login API'S")
-@CrossOrigin(origins = "http://localhost:5173",
-allowCredentials = "true")
+
 public class AuthController {
 
     private final AuthenticationService authenticationService;
@@ -48,7 +47,7 @@ public class AuthController {
 
         ResponseCookie cookie = ResponseCookie.from("jwt", jwt)
                 .httpOnly(true)
-                .secure(false)          // Change to true after HTTPS deployment
+                .secure(true)          // Change to true after HTTPS deployment
                 .sameSite("None")        // Change to None after deployment
                 .path("/")
                 .maxAge(Duration.ofDays(1))
