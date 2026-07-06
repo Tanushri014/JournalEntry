@@ -1,32 +1,28 @@
-# Environment variables
-.env
-.env.*
+# Build output
+target/
 
-# Logs
-*.log
-logs/
+# Maven wrapper (optional)
+.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ
+.idea/
+*.iml
+out/
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Maven
-.mvn/wrapper/maven-wrapper.jar
+# Logs
+logs/
+*.log
 
-# IntelliJ
-.idea/
-out/
-
-# Generated files
-*.class
-
-# Secrets
+# Environment files
+.env
+.env.*
 application-local.yml
 application-prod.yml
 
-
-# Build output
-target/
-
-# IntelliJ
-*.iml
+# Secrets (if you keep them separately)
+*.pem
+*.key

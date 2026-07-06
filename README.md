@@ -1,29 +1,60 @@
+
 # 📓 Journal Management API
 
-A production-ready **Spring Boot REST API** for managing personal journal entries with **JWT Authentication**, **Spring Security**, **MySQL**, and **Docker**.
+A production-ready **Spring Boot REST API** for a secure personal journal application. The API provides **JWT Authentication**, **Email OTP Verification**, **Journal Management**, **Mood & Date Filtering**, and **Motivational Quote Generation**.
 
 ---
 
 ## 🚀 Features
 
+### Authentication & Security
 - 🔐 JWT Authentication & Authorization
-- 👤 User Registration & Login
-- 📝 Journal CRUD Operations
-- ✏️ Update User Profile
-- 🗑️ Delete User Profile
-- 📚 Swagger/OpenAPI Documentation
+- 📧 Email OTP Verification
+- 🔄 OTP Resend Support
+- 🔒 BCrypt Password Encryption
+- 🛡️ Spring Security
+
+### Journal Management
+- 📝 Create Journal Entries
+- 📖 View All Journal Entries
+- 🔍 View Journal Entry by ID
+- ✏️ Update Journal Entries
+- 🗑️ Delete Journal Entries
+- 😊 Filter Entries by Mood
+- 📅 Filter Entries by Date
+- 💬 Generate Motivational Quotes
+
+### Additional Features
 - ✅ Request Validation
 - ⚠️ Global Exception Handling
+- 📚 Swagger/OpenAPI Documentation
+- 🐳 Docker Support
 - 🗄️ MySQL Database
-- 🐳 Docker & Docker Compose Support
-- 🌱 Environment-based Configuration (Dev & Prod)
+
+---
+
+## 🏗️ Architecture
+
+```
+React Frontend
+       │
+       │ REST API (JWT)
+       ▼
+Spring Boot Backend
+       │
+Spring Security
+       │
+Spring Data JPA
+       │
+      MySQL
+```
 
 ---
 
 ## 🛠️ Tech Stack
 
 - Java 21
-- Spring Boot 3.5
+- Spring Boot 3
 - Spring Security
 - Spring Data JPA (Hibernate)
 - MySQL 8
@@ -31,15 +62,16 @@ A production-ready **Spring Boot REST API** for managing personal journal entrie
 - Maven
 - Docker
 - Docker Compose
-- Swagger (OpenAPI 3)
+- Swagger / OpenAPI
+- Brevo SMTP
 
 ---
 
 ## 📂 Project Structure
 
-```
+```text
 src
-├── configuration
+├── config
 ├── controller
 ├── dto
 ├── entity
@@ -48,6 +80,7 @@ src
 ├── repository
 ├── security
 ├── service
+└── util
 ```
 
 ---
@@ -57,41 +90,58 @@ src
 Create a `.env` file in the project root.
 
 ```env
-DB_URL=jdbc:mysql://mysql-db:3306/DB_NAME
-DB_USERNAME=YOUR_USERNAME
-DB_PASSWORD=YOUR_PASSWORD
+DB_URL=
 
-JWT_SECRET=your-secret-key
+DB_USERNAME=
+
+DB_PASSWORD=
+
+JWT_SECRET=
+
 JWT_EXPIRATION=86400000
 
-EMAIL_USERNAME=your-email@gmail.com
-APP_PASSWORD=your-app-password
+MAIL_USERNAME=
 
-QUOTE_URL=https://dummyjson.com/quotes/random
+MAIL_PASSWORD=
+
+BREVO_API_KEY=
+
+QUOTE_API_URL=https://dummyjson.com/quotes/random
 
 SPRING_PROFILES_ACTIVE=prod
+
+FRONTEND_URL=
 ```
+
+An `.env.example` file is included in the repository as a reference.
 
 ---
 
-## ▶️ Run Locally
+## 📋 Prerequisites
+
+Before running the application, ensure you have installed:
+
+- Java 21
+- Maven
+- Docker & Docker Compose (Optional)
+- MySQL 8 (If not using Docker)
+
+---
+
+## ▶️ Running Locally
 
 Clone the repository
 
 ```bash
-git clone https://github.com/Tanushri014/journal-management-api.git
+git clone https:https://github.com/Tanushri014/JournalEntry
 ```
 
-Move into the project
-
-```bash
-cd journal-management-api
-```
+Configure your `.env` file.
 
 Build the project
 
 ```bash
-mvn clean package
+mvn clean install
 ```
 
 Run the application
@@ -100,11 +150,17 @@ Run the application
 mvn spring-boot:run
 ```
 
+The server starts on
+
+```
+http://localhost:8081
+```
+
 ---
 
-## 🐳 Run with Docker
+## 🐳 Running with Docker
 
-Build the image
+Build the Docker images
 
 ```bash
 docker compose build
@@ -140,19 +196,20 @@ http://localhost:8081/v3/api-docs
 
 ---
 
-## 🔐 Authentication
+## 🔐 Authentication Flow
 
-1. Register a user.
-2. Login using your credentials.
-3. Copy the JWT token.
-4. Click **Authorize** in Swagger.
-5. Enter:
+1. Register a new account.
+2. Verify your email using the OTP.
+3. Login with your credentials.
+4. Copy the generated JWT token.
+5. Click **Authorize** in Swagger.
+6. Enter:
 
 ```
 Bearer <your_token>
 ```
 
-6. Access secured APIs.
+7. Access protected APIs.
 
 ---
 
@@ -160,65 +217,75 @@ Bearer <your_token>
 
 ### Authentication
 
-- Register User
-- Login User
+| Method | Endpoint |
+|--------|----------|
+| POST | `/auth/register` |
+| POST | `/auth/verify-otp` |
+| POST | `/auth/resend-otp` |
+| POST | `/auth/login` |
+
+
+---
 
 ### User
 
-- Get Profile
-- Update Profile
-- Delete Profile
+| Method | Endpoint |
+|--------|----------|
+| GET | `/user` |
+| PUT | `/user` |
+| DELETE | `/user` |
+
+---
 
 ### Journal
 
-- Create Journal Entry
-- Get All Entries
-- Get Entry By ID
-- Update Entry
-- Delete Entry
+| Method | Endpoint |
+|--------|----------|
+| POST | `/journal` |
+| GET | `/journal` |
+| GET | `/journal/{id}` |
+| PUT | `/journal/{id}` |
+| DELETE | `/journal/{id}` |
+| GET | `/journal/search?date=` |
+| GET | `/journal/mood?mood=` |
+| GET | `/journal/quote` |
 
 ---
 
-## 🗃️ Database
+## 🗄️ Database
 
 - MySQL 8
 - Spring Data JPA
-- Hibernate
+- Hibernate ORM
 
-Database schema is automatically updated using:
+Database schema is automatically managed using:
 
-```yaml
+```properties
 spring.jpa.hibernate.ddl-auto=update
 ```
-
----
-
-## 🐳 Docker
-
-This project is fully containerized using Docker.
-
-Containers:
-
-- journal-app
-- mysql-db
-
----
-
-## 📸 Screenshots
 
 ### Docker Containers
 
 ![img_1.png](img_1.png)
 
----
-
 ## 👨‍💻 Author
 
 **Tanushri Matre**
 
-GitHub: https://github.com/Tanushri014
+GitHub  
+https://github.com/Tanushri014
 
-LinkedIn: www.linkedin.com/in/tanushri-matre-9756982a7
+LinkedIn  
+https://www.linkedin.com/in/tanushri-matre-9756982a7
 
 ---
+
+## ⭐ Support
+
+If you found this project helpful, consider giving it a ⭐ on GitHub.
+
+
+
+
+
 
