@@ -264,10 +264,6 @@ Database schema is automatically managed using:
 spring.jpa.hibernate.ddl-auto=update
 ```
 
-### Docker Containers
-
-![img_1.png](img_1.png)
-
 ## 👨‍💻 Author
 
 **Tanushri Matre**
